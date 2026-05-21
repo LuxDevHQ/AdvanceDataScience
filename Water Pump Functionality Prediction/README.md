@@ -152,7 +152,7 @@ water-pump-prediction/
 
 ## 5. ML Workflow
 
-You will work in a single or multiple notebooks   (`water_pump_analysis.ipynb`). Use **markdown cells** to clearly label and separate each step. The steps below define what each section of your notebook should cover.
+You will work in a single or multiple notebooks (`water_pump_analysis.ipynb`). Use **markdown cells** to clearly label and separate each step. The steps below define what each section of your notebook should cover.
 
 ---
 
@@ -325,8 +325,8 @@ Standard Pearson correlation only works for numeric features. For understanding 
 -  Step 4: Sklearn pipelines built and multiple models trained with cross-validation
 -  Step 5: Best model selected, evaluated on test set, and saved to `models/`
 -  Flask app running locally with a single-page form and prediction output
--  `README.md` present and up to date
+-  `README.md` present and up to date  
 __Push the final project to github__
 ---
 
-*Good luck! The quality of your model will reflect the quality of your understanding of the data — spend time in EDA before rushing to modelling.* 💧
+*Good luck!* 💧
