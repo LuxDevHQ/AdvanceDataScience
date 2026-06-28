@@ -47,19 +47,18 @@ For example, in a finance department, the accountant may prepare a monthly finan
 
 ### **3. Power BI Desktop vs Power BI Service**
 
-Power BI Desktop and Power BI Service are different but connected.
+- Power BI Desktop and Power BI Service are different but connected.
 
-Power BI Desktop is mainly used for building reports.
+- Power BI Desktop is mainly used for building reports.
 
-Power BI Service is mainly used for publishing, sharing, managing, refreshing, and collaborating on reports.
+- Power BI Service is mainly used for publishing, sharing, managing, refreshing, and collaborating on reports.
 
-Power BI Desktop is installed on your computer. It is where you connect to data, clean data using Power Query, create relationships, write DAX measures, and design report pages.
+- Power BI Desktop is installed on your computer. It is where you connect to data, clean data using Power Query, create relationships, write DAX measures, and design report pages.
 
-Power BI Service is accessed through a browser. It is where you publish the report, manage permissions, configure refresh, create dashboards, share reports, and embed reports.
+- Power BI Service is accessed through a browser. It is where you publish the report, manage permissions, configure refresh, create dashboards, share reports, and embed reports.
 
-Example:
-
-A data analyst uses Power BI Desktop to build a finance report. After completing the report, they publish it to Power BI Service. The finance manager then logs in to Power BI Service to view the report online.
+**Example:**
+>> A data analyst uses Power BI Desktop to build a finance report. After completing the report, they publish it to Power BI Service. The finance manager then logs in to Power BI Service to view the report online.
 
 ---
 
