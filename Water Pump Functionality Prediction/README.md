@@ -1,6 +1,4 @@
-#  CHO4 & CH05 Internship Project - May 2026
-
-**Water Pump Functionality Prediction**
+# **Water Pump Functionality Prediction**
 
 > A supervised machine learning project to classify the operational condition of waterpoints across Tanzania.
 
