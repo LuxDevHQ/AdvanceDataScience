@@ -1,37 +1,29 @@
-# Resume Screening & ATS Hiring: Beginner Data Science Project
+# Mental Health & Burnout Prediction: Beginner Data Science Project
 
 ## 1. Objective
 
-You'll work with a synthetic dataset of **100,000 job candidates** and **44 columns**, covering candidate background, education, skills, test/interview scores, and ATS (Applicant Tracking System) metrics. The task is **classification**: predict `selected` (`Selected` / `Rejected`) for each candidate.
+You'll work with a synthetic dataset of **50,000 people** and **40 columns**, covering demographics, work, lifestyle habits, and psychological indicators. The task is **classification**: predict `Burnout_Risk` (`Low` / `Moderate` / `High`) for each person.
 
-**Dataset source:** [Resume Screening and ATS Hiring Dataset (100k Record) (Kaggle)](https://www.kaggle.com/datasets/mobeenfatimah/resume-screening-and-ats-hiring-dataset100k-record)
-**File used in this project:** `ai_resume_screening_dataset.csv`
-**Target column:** `selected`
+**Dataset source:** [Mental Health & Burnout Prediction Dataset (Kaggle)](https://www.kaggle.com/datasets/mobeenfatimah/mental-health-and-burnout-prediction-dataset)
+**File used in this project:** `mental_health_burnout_prediction_dataset.csv`
+**Target column:** `Burnout_Risk`
 
 Your goal is to take this dataset from raw CSV to a working, evaluated model, in **one notebook**, following the steps below in order. Every step should have a markdown cell explaining what you did and why; that explanation is as important as the code.
 
-### ⚠️ Important: drop PII and identifier columns
+### ⚠️ Important: watch for leakage
 
-This dataset includes personally identifiable information that should never be used as a model feature, plus a few pure identifier columns. Drop all of these from your features `X` before modeling:
+Two other columns in this dataset describe the **same underlying outcome** as `Burnout_Risk`, and must be **dropped from your features `X`**:
 
-`candidate_id`, `full_name`, `email`, `phone`, `github_profile`, `linkedin_profile`
-
-None of these describe anything about a candidate's qualifications; they only identify who the row belongs to. Including them risks the model "memorizing" individuals instead of learning general patterns, and it's bad practice to build hiring models on names, emails, or phone numbers even in a synthetic dataset.
-
-### ⚠️ Also watch: very high-cardinality columns
-
-A few columns have so many unique values that one-hot encoding them directly would create tens of thousands of new columns and likely hurt your model more than help it:
-
-| Column | Unique values | Suggestion |
+| Column | Type | Why it must be dropped |
 |---|---|---|
-| `city` | ~37,950 | Drop it; `country` already captures location at a usable level |
-| `preferred_location` | ~15,831 | Drop it, or reduce to a simpler "same as country?" flag if you want to keep it |
-| `previous_companies` | ~34,104 (free text, comma-separated) | Turn into a simple count feature (e.g. `num_previous_companies`) instead of encoding the raw text |
-| `technical_skills` | ~97,372 (free text, comma-separated) | Turn into a count feature (e.g. `num_technical_skills`), or flag the presence of a handful of common skills you're interested in |
+| `Burnout_Score` | Numeric (0–100) | `Burnout_Risk` is built directly from this (Low = 0–39, Moderate = 40–64, High = 65–100). Keeping it in `X` means the model just reads the threshold instead of learning anything. |
+| `Mental_Health_Status` | Categorical (`Healthy` / `Needs Attention` / `Critical`) | Also built from `Burnout_Score`, using different thresholds; almost the same information as your target. |
 
-### ⚠️ Also watch: comma-separated "list" columns
+Also drop:
+- `AI_Wellness_Recommendation`: looks like a recommendation generated *after* burnout risk is known (a consequence, not a cause), so it would leak information too.
+- `Person_ID`: just an identifier, not a predictive feature.
 
-`technical_skills`, `programming_languages`, `frameworks`, `databases`, `cloud_platform`, and `certifications` are not simple categories; each cell holds a comma-separated list (e.g. `"Pandas, HTML, Git, C++, Java"`), and many rows use the literal text `"Not Applicable"` to mean "none." Don't one-hot encode these as-is. The simplest beginner-friendly approach: for each of these columns, engineer a count feature (how many items are listed, treating `"Not Applicable"` as 0) rather than trying to encode every possible value.
+If your model gets suspiciously close to 100% accuracy, it's almost certainly because one of these four columns snuck back into `X`. This is called **data leakage**, and catching it is one of the most important skills in this project.
 
 ---
 
@@ -39,52 +31,48 @@ A few columns have so many unique values that one-hot encoding them directly wou
 
 | Column | Type | Notes |
 |---|---|---|
-| `candidate_id` | string | Identifier, drop before modeling |
-| `full_name` | string | PII, drop before modeling |
-| `email` | string | PII, drop before modeling |
-| `phone` | string | PII, drop before modeling |
-| `country` | category (243) | |
-| `city` | category (~37,950) | Very high cardinality, drop (see note above) |
-| `age` | int | Range 21-55 |
-| `gender` | category (3) | Male / Female / Other |
-| `highest_education` | category (5) | High School → PhD |
-| `university` | category (15) | |
-| `field_of_study` | category (9) | |
-| `cgpa` | float | Range 2.5-4.0 |
-| `graduation_year` | int | Range 1989-2026 |
-| `experience_years` | int | Range 0-35 |
-| `previous_companies` | string, comma-separated list | ~21% are `"Not Applicable"`; turn into a count feature |
-| `current_job_title` | category | |
-| `internship_experience` | category (2) | Yes / No |
-| `leadership_experience` | category (2) | Yes / No |
-| `technical_skills` | string, comma-separated list | Turn into a count feature |
-| `programming_languages` | string, comma-separated list | ~31% are `"Not Applicable"`; turn into a count feature |
-| `frameworks` | string, comma-separated list | Turn into a count feature |
-| `databases` | string, comma-separated list | ~31% are `"Not Applicable"`; turn into a count feature |
-| `cloud_platform` | string, comma-separated list | ~31% are `"Not Applicable"`; turn into a count feature |
-| `projects_completed` | int | |
-| `github_profile` | string | PII, drop before modeling |
-| `linkedin_profile` | string | PII, drop before modeling |
-| `certifications` | string, comma-separated list | Turn into a count feature |
-| `publications` | int | Range 0-3 |
-| `communication_score` | int | |
-| `problem_solving_score` | int | |
-| `technical_test_score` | int | |
-| `interview_score` | int | |
-| `aptitude_score` | int | |
-| `job_role` | category (15) | |
-| `expected_salary` | int | Range 45,000-401,000 |
-| `preferred_location` | category (~15,831) | Very high cardinality, drop or simplify (see note above) |
-| `employment_type` | category (4) | Full-Time / Part-Time / Contract / Internship |
-| `remote_preference` | category (3) | On-site / Hybrid / Remote |
-| `availability` | category (5) | Immediate / 15 / 30 / 60 / 90 Days |
-| `resume_quality_score` | int | |
-| `resume_length` | int | Range 1-4 (pages) |
-| `keyword_match_percentage` | float | |
-| `ats_score` | int | Range 40-99 |
-| `selected` | category (2) | **This is the target `y`**: Selected / Rejected |
+| `Person_ID` | int | Identifier, drop before modeling |
+| `Age` | float | Has missing values |
+| `Gender` | category (3) | Male / Female / Other |
+| `Country` | category (25) | |
+| `Occupation` | category (20) | |
+| `Education_Level` | category (5) | High School → PhD |
+| `Employment_Status` | category (4) | Employed / Student / Self-Employed / Unemployed |
+| `Monthly_Income_USD` | float | Has missing values |
+| `Work_Hours_Per_Week` | int | |
+| `Remote_Work` | category (3) | Yes / No / Hybrid |
+| `Job_Satisfaction` | float | 1–10 scale, has missing values |
+| `Work_Life_Balance` | float | 1–10 scale, has missing values |
+| `Sleep_Hours` | float | Has missing values |
+| `Sleep_Quality` | category (4) | Poor / Average / Good / Excellent |
+| `Stress_Level` | category (3) | Low / Moderate / High |
+| `Anxiety_Score` | float | Has missing values |
+| `Depression_Score` | float | Has missing values |
+| `Mood_Score` | float | Has missing values |
+| `Emotional_Stability` | int | |
+| `Physical_Activity_Hours` | float | Has missing values |
+| `Exercise_Frequency` | category (4) | Never / Rarely / Weekly / Daily |
+| `Meditation_Minutes` | float | Has missing values |
+| `Screen_Time_Hours` | float | Has missing values |
+| `Social_Media_Hours` | float | Has missing values |
+| `Gaming_Hours` | float | Has missing values |
+| `Coffee_Cups_Per_Day` | int | |
+| `Alcohol_Consumption` | category (2) | Yes / No |
+| `Smoking` | category (2) | Yes / No |
+| `Healthy_Diet` | category (2) | Yes / No |
+| `Chronic_Stress` | category (2) | Yes / No |
+| `Family_History_Mental_Illness` | category (2) | Yes / No |
+| `Therapy_Attendance` | category (2) | Yes / No, has missing values |
+| `Support_System` | category (4) | Poor / Average / Good / Excellent |
+| `Life_Satisfaction` | float | Has missing values |
+| `Productivity_Score` | float | Has missing values |
+| `Absenteeism_Days` | int | |
+| `Burnout_Score` | int (0–100) | **Drop from features, leaky, see note above** |
+| `Mental_Health_Status` | category (3) | **Drop from features, leaky, see note above** |
+| `AI_Wellness_Recommendation` | category (7) | **Drop from features, leaky** |
+| `Burnout_Risk` | category (3) | **This is the target `y`**: Low / Moderate / High |
 
-**Missing values:** none. **Duplicate rows:** none. **Target balance:** exactly 50,000 `Selected` / 50,000 `Rejected`, a perfectly balanced target, which makes this a friendlier starting point than the burnout dataset for beginners (accuracy is a reasonable metric here, though it's still worth checking precision/recall).
+**Columns with missing values (16 total):** `Age`, `Monthly_Income_USD`, `Job_Satisfaction`, `Work_Life_Balance`, `Sleep_Hours`, `Anxiety_Score`, `Depression_Score`, `Mood_Score`, `Physical_Activity_Hours`, `Meditation_Minutes`, `Screen_Time_Hours`, `Social_Media_Hours`, `Gaming_Hours`, `Therapy_Attendance`, `Life_Satisfaction`, `Productivity_Score`. All are under 3% of rows missing, small enough to impute safely. No duplicate rows in the file.
 
 ---
 
@@ -93,16 +81,16 @@ A few columns have so many unique values that one-hot encoding them directly wou
 Keep it simple:
 
 ```
-resume-ats-project/
+mental-health-burnout-project/
 │
 ├── README.md                 <- Project instructions AND your final write-up (see Step 9)
 ├── requirements.txt          <- Packages you used
 │
 ├── data/
-│   └── ai_resume_screening_dataset.csv
+│   └── mental_health_burnout_prediction_dataset.csv
 │
 └── notebooks/
-    └── resume_ats_project.ipynb   <- Your one and only notebook
+    └── mental_health_burnout_project.ipynb   <- Your one and only notebook
 ```
 
 No separate `report.md`. Your findings go straight into this `README.md`, at the bottom, under a `## Findings & Final Report` section (see Step 9).
@@ -114,60 +102,57 @@ No separate `report.md`. Your findings go straight into this `README.md`, at the
 Use markdown headers in your notebook to separate these sections clearly; it should read top to bottom like a story.
 
 ### Step 1: Load the Data & Look Around
-- [ ] Load `ai_resume_screening_dataset.csv` with pandas
-- [ ] Check `.shape` (should be 100,000 x 44), `.head()`, `.info()`, `.describe()`
+- [ ] Load `mental_health_burnout_prediction_dataset.csv` with pandas
+- [ ] Check `.shape` (should be 50,000 × 40), `.head()`, `.info()`, `.describe()`
 - [ ] Confirm your understanding of each column against the Data Dictionary above
-- [ ] Note in a markdown cell that `selected` is your target, and list the PII/identifier/high-cardinality columns you'll drop before modeling
+- [ ] Note in a markdown cell that `Burnout_Risk` is your target, and that `Burnout_Score`, `Mental_Health_Status`, `AI_Wellness_Recommendation`, and `Person_ID` will need to be dropped from the features before modeling
 
 ### Step 2: Pre-Cleaning Checks
-- [ ] Check for missing values (`df.isnull().sum()`); this dataset has none, but confirm it yourself
-- [ ] Check for duplicate rows (`df.duplicated().sum()`); should be 0
-- [ ] Check your target's distribution (`value_counts()`); should be an exact 50/50 split
-- [ ] Look at the comma-separated columns (`technical_skills`, `programming_languages`, etc.) and count how often `"Not Applicable"` appears in each
-- [ ] Check for obviously wrong values (e.g. `cgpa` outside 0-4, negative `age` or `experience_years`)
+- [ ] Check for missing values (`df.isnull().sum()`); you should find the 16 columns listed above
+- [ ] Check for duplicate rows (`df.duplicated().sum()`); should be 0, but confirm it yourself
+- [ ] Check your target's distribution (`value_counts()`): is it balanced? (`Burnout_Risk`: Low ~51%, Moderate ~30%, High ~20%, moderately imbalanced)
+- [ ] Check for obviously wrong values (e.g. negative ages, scores outside their stated scale)
 - [ ] Note down everything you found before fixing anything
 
 ### Step 3: Clean the Data
-- [ ] Since there are no missing values or duplicates, "cleaning" here mostly means preparing columns for modeling rather than fixing broken data
-- [ ] For each comma-separated column, engineer a count feature (e.g. `num_technical_skills = technical_skills.apply(lambda x: 0 if x == "Not Applicable" else len(x.split(",")))`)
-- [ ] Drop the PII columns listed in Section 1
-- [ ] Drop or simplify `city` and `preferred_location` as noted in Section 1
+- [ ] Handle missing values: for numeric columns, median imputation is a safe default; for `Therapy_Attendance` (categorical), consider filling with the mode or an `"Unknown"` category. Explain your choice for each column.
+- [ ] Confirm data types look right (e.g. `Work_Hours_Per_Week`, `Coffee_Cups_Per_Day` as integers)
 - [ ] Standardize any messy category labels if you spot them
-- [ ] Re-check Step 2's issues to confirm your changes worked as expected
+- [ ] Re-check Step 2's issues to confirm they're fixed
 
-### Step 4: Hypothesis Testing
-Pick a few features you think matter most and test them properly instead of just guessing from a chart. Good candidates given this dataset: `interview_score`, `technical_test_score`, `ats_score`, `experience_years`, `keyword_match_percentage`; `highest_education`, `internship_experience`, `leadership_experience`, `remote_preference`.
+### Step 4: Hypothesis Testing (Feature Selection)
+The point of this step is **feature selection**: test every remaining feature (after Step 3's cleaning, everything except the dropped leakage columns and `Person_ID`) against the target so you know, with evidence rather than a guess, which ones are actually worth keeping.
 
-- **Numerical feature vs. target** (e.g. `interview_score` vs. `selected`): since `selected` has exactly 2 groups, use an independent t-test to check if the average of the feature really differs between `Selected` and `Rejected`. State H₀, H₁, and your conclusion from the p-value.
-- **Categorical feature vs. target** (e.g. `internship_experience` vs. `selected`): use a Chi-square test to check if the feature and target are related.
+- **Numerical feature vs. target** (e.g. `Age`, `Monthly_Income_USD`, `Work_Hours_Per_Week`, `Job_Satisfaction`, `Work_Life_Balance`, `Sleep_Hours`, `Anxiety_Score`, `Depression_Score`, `Mood_Score`, `Emotional_Stability`, `Physical_Activity_Hours`, `Meditation_Minutes`, `Screen_Time_Hours`, `Social_Media_Hours`, `Gaming_Hours`, `Coffee_Cups_Per_Day`, `Life_Satisfaction`, `Productivity_Score`, `Absenteeism_Days`, and any other numeric column you kept): use ANOVA on each one to check if its average really differs across the three `Burnout_Risk` groups. State H₀, H₁, and your conclusion from the p-value.
+- **Categorical feature vs. target** (e.g. `Gender`, `Country`, `Occupation`, `Education_Level`, `Employment_Status`, `Remote_Work`, `Sleep_Quality`, `Stress_Level`, `Exercise_Frequency`, `Alcohol_Consumption`, `Smoking`, `Healthy_Diet`, `Chronic_Stress`, `Family_History_Mental_Illness`, `Therapy_Attendance`, `Support_System`, and any other categorical column you kept): use a Chi-square test on each one to check if the feature and target are related.
 
-Do this for at least 3-4 numeric and 3-4 categorical features, and summarize your results in a small table.
+Run this test on **every column you plan to feed the model**, not just a handful. Build one combined table (feature | type | test used | statistic | p-value | significant at α = 0.05?) covering all of them. Columns that come back not statistically significant are candidates to drop in Step 6, since they're unlikely to help the model and just add noise.
 
 ### Step 5: Exploratory Data Analysis (EDA)
-Answer these with a plot or table plus 2-3 sentences each:
+Answer these with a plot or table + 2–3 sentences each:
 
-1. What does the distribution of `selected` look like? (You already know it's 50/50, but confirm and state it.)
-2. How do `ats_score`, `interview_score`, and `technical_test_score` compare between `Selected` and `Rejected` candidates (boxplots)?
-3. Does `experience_years` differ meaningfully between the two groups?
-4. How does the selection rate change across `highest_education` levels (bar chart)?
-5. How does the selection rate change across `job_role` (bar chart)? Are some roles more competitive than others?
-6. Do candidates with `internship_experience` or `leadership_experience` get selected at a noticeably higher rate?
-7. Is there a relationship between your new `num_technical_skills` feature and selection?
-8. Is there a correlation heatmap pattern among the six score columns (`communication_score`, `problem_solving_score`, `technical_test_score`, `interview_score`, `aptitude_score`, `resume_quality_score`)? Do any move together strongly?
-9. Which features seem most associated with being selected overall, and does that match your Step 4 hypothesis test results?
+1. What does the distribution of `Burnout_Risk` look like?
+2. What do the distributions of `Sleep_Hours`, `Work_Hours_Per_Week`, `Stress_Level`-related scores look like (histograms)? Any skewed ones?
+3. How do `Anxiety_Score`, `Depression_Score`, and `Mood_Score` compare across burnout risk groups (boxplots)?
+4. How does burnout risk change across `Employment_Status`, `Remote_Work`, and `Support_System` categories (bar charts)?
+5. Does `Work_Hours_Per_Week` combined with `Sleep_Hours` show a clearer pattern with burnout than either alone (scatter plot colored by target)?
+6. Is there a correlation heatmap pattern among the numeric wellbeing scores (`Anxiety_Score`, `Depression_Score`, `Mood_Score`, `Life_Satisfaction`, `Productivity_Score`)? Do any move together strongly?
+7. Do `Chronic_Stress` and `Family_History_Mental_Illness` show a noticeably higher burnout rate than the rest of the population?
+8. Which features seem most associated with burnout overall, and does that match your Step 4 hypothesis test results?
 
 Feel free to add your own questions if you notice something interesting.
 
 ### Step 6: Split Features and Target, Then Train/Test Split
-- [ ] Drop the PII columns, `candidate_id`, `city`, and `preferred_location` from the dataframe before building `X`
-- [ ] Make sure your engineered count features from Step 3 are included
-- [ ] Encode the remaining categorical columns (one-hot encoding is fine for the low-cardinality ones like `gender`, `highest_education`, `employment_type`, `remote_preference`, `availability`, `job_role`)
+- [ ] Drop `Person_ID`, `Burnout_Score`, `Mental_Health_Status`, and `AI_Wellness_Recommendation` from the dataframe before building `X`
+- [ ] Drop any features that came back not statistically significant in Step 4, unless you have a good reason to keep one anyway (explain it if so)
+- [ ] Encode the remaining categorical columns (one-hot encoding is fine to start)
 - [ ] Scale numeric columns if you're using a model that needs it (KNN, SVM, logistic regression, neural net)
-- [ ] Split into `X` (all remaining features) and `y = df['selected']`
+- [ ] Split into `X` (all remaining features) and `y = df['Burnout_Risk']`
 - [ ] Split into train and test sets (80/20) with `train_test_split(..., stratify=y, random_state=42)`
+- [ ] If you train a neural network later, also carve a small validation set out of the training data (e.g. train 70% / val 10% / test 20%)
 
 ### Step 7: Train Several Models with Cross-Validation
-Start with a simple baseline (always predict the most common class; since it's an exact 50/50 split, this baseline gets 50% accuracy), then try a handful of models using 5-fold cross-validation on the training set:
+Start with a simple baseline (always predict the most common class, `Low`, ~51% of rows), then try a handful of models using 5-fold cross-validation on the training set:
 
 - Logistic Regression
 - Decision Tree
@@ -176,7 +161,7 @@ Start with a simple baseline (always predict the most common class; since it's a
 - Gradient Boosting / XGBoost
 - (Optional, if you want to go further) a simple Neural Network
 
-For each, record the average cross-validation accuracy and F1-score, and build one small comparison table so you can see which models are doing best.
+For each, record the average cross-validation accuracy and F1-score (use macro-F1 since the classes are imbalanced), and build one small comparison table so you can see which models are doing best.
 
 ### Step 8: Hyperparameter Tuning
 - [ ] Pick your top 2 models from Step 7
@@ -185,10 +170,10 @@ For each, record the average cross-validation accuracy and F1-score, and build o
 
 ### Step 9: Wrap Up in This README
 Add a `## Findings & Final Report` section to the bottom of this README (half a page to a page) covering:
-- What the data looked like and how you handled the comma-separated columns
+- What the data looked like and what you cleaned
 - Your hypothesis test findings
 - Your key EDA insights
-- Which model won and its final test-set performance (accuracy + F1 + confusion matrix)
+- Which model won and its final test-set performance (accuracy + macro-F1 + confusion matrix)
 - One or two things you'd try next with more time
 
 ---
@@ -197,9 +182,9 @@ Add a `## Findings & Final Report` section to the bottom of this README (half a 
 
 - Set `random_state=42` everywhere so your results are reproducible.
 - Fit scalers/encoders on the training data only, then apply them to the test data. Never fit on test data.
-- The target is perfectly balanced, so accuracy is a reasonable headline metric here, but still check precision, recall, and F1 to make sure your model isn't just doing well on one class.
-- Never train a model on PII (names, emails, phone numbers) even if it seems to "work"; it's bad practice regardless of dataset, and it's a good habit to build now.
-- This is a hiring-related dataset even though it's synthetic; keep in mind that real-world resume screening models can encode bias (e.g. by proxying for gender or nationality through university or country), and it's worth a sentence in your final report reflecting on that.
+- The target is imbalanced (`Low` ~51%, `Moderate` ~30%, `High` ~20%). Don't judge your model on accuracy alone; check macro-F1, precision, and recall too.
+- Watch out for the leakage columns described in Section 1. If your model gets 99%+ accuracy, that's a red flag that a leaky column snuck back into `X`, not a sign your model is great.
+- This is a sensitive topic even on synthetic data. Keep your language and conclusions responsible (correlation isn't causation).
 
 ---
 
@@ -227,7 +212,7 @@ statsmodels
 jupyter
 ```
 
-Good luck. Work through it one step at a time, and don't worry about getting the "best" model. A clean, well-explained process (and handling those comma-separated columns sensibly!) matters more than a perfect score.
+Good luck. Work through it one step at a time, and don't worry about getting the "best" model. A clean, well-explained process (and catching the leakage trap!) matters more than a perfect score.
 
 ---
 
@@ -235,12 +220,13 @@ Good luck. Work through it one step at a time, and don't worry about getting the
 
 *(Fill this section in as your Step 9 deliverable, once your notebook is complete.)*
 
-**Data summary:** What did the raw data look like, and how did you handle the comma-separated columns and PII?
+**Data summary:** What did the raw data look like, and what did you clean?
 
-**Hypothesis test results:** Summary of which features were statistically significant against `selected`.
+**Hypothesis test results:** Which features were statistically significant against `Burnout_Risk` (and therefore kept), and which were dropped.
 
 **Key EDA insights:** 2-4 bullet points on the most interesting patterns you found.
 
-**Final model:** Which model you chose, its final test-set accuracy, F1, and confusion matrix.
+**Final model:** Which model you chose, its final test-set accuracy, macro-F1, and confusion matrix.
 
 **Next steps:** What you'd try with more time or data.
+
